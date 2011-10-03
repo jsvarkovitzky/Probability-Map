@@ -1,3 +1,8 @@
+#This program generates pseudo-maximum wave heights from a simulation to be used by probMaker.py
+
+#Jonathan Varkovitzky
+#10-2-2011
+
 from scipy import *
 from pylab import *
 from matplotlib import *
