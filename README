@@ -1,0 +1,1 @@
+gaussMaker.py generates a series of artificial runups on a grid which can be used to test probabilistic codes.  probMaker.py takes provided output files from gaussMaker.py and combines them based on the proability of each event to make a probabilistic hazard map.

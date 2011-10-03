@@ -1,0 +1,16 @@
+from scipy import *
+from pylab import *
+from matplotlib import *
+
+A = 1
+sigma = 250
+xCenter = 500
+yCenter = 500
+gauss1 = zeros((1000,1000))
+for i in range (0,1000):
+    for j in range (0,1000):
+        gauss1[i,j] = A*exp(-((i-xCenter)**2+(j-yCenter)**2)/sigma)
+        gauss1[i,j] = A*sin(i*0.01)*sin(j*.02)
+
+matplotlib.pyplot.contour(gauss1,100)
+show()
