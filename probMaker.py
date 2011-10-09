@@ -6,26 +6,25 @@
 from numpy import *
 from matplotlib import *
 from pylab import *
-event1 = loadtxt('runup1.txt')
-event2 = loadtxt('runup2.txt')
-event3 = loadtxt('runup3.txt')
-event4 = loadtxt('runup4.txt')
+event1 = loadtxt('fort.fg01_0020',skiprows=9)
+
 
 mu = (76,32,88,120)
-n = 100
-m = 100
+n = 200
+m = 200
 
-eventk = zeros((n,m,4))
-eventk[:,:,1] = event1[:,:]
-eventk[:,:,2] = event2[:,:]
-eventk[:,:,3] = event3[:,:]
-eventk[:,:,4] = event4[:,:]
+#Need to take the column of inundaiton data and convert it into a rectangular matrix
+h = zeros((n,m))
+for i in range (1,n):
+    for j in range (1,m):
+       h[i,j] = event1[i+j-1,4]
+  
 
 muMap = zeros((n,m))
 
-for k in range(0,4):
-    for i in range(0,n):
-        for j in range(0,m):
+for k in range(0,1):              #Loop through invidual events
+    for i in range(0,n):          #Loop through x direction
+        for j in range(0,m):      #Loop through y direction
             if eventk[i,j,k] > 1:
                 muMap[i,j] = muMap[i,j] + mu[k]
 
