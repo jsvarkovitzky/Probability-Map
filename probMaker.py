@@ -29,4 +29,5 @@ for i in range(1,n):          #Loop through x direction
 
 
 matplotlib.pyplot.contour(h,100)
+colorbar()
 show()
