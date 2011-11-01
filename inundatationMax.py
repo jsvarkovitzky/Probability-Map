@@ -22,12 +22,13 @@ def maxH( nfiles,n,m,k ):
         varname = 'fort_%s' %str(fnum).zfill(4)
         #print 'Reading in: '+ fname
         exec('%s=loadtxt(%r, skiprows=9)'%(varname,fname))
-    
+        status(fnum,nfiles)
         max_h = zeros((n,m))
         max_h2 = zeros((n,m))
     
     print "Analysing frames"
     for k in range(0,nfiles):
+        status(k,nfiles)
         varnam = 'fort_%s' %str(k).zfill(4)
         exec('y = %s[:,1].copy()'%varname)
         z = y.reshape(n,m,order='F')
@@ -63,42 +64,61 @@ def tidalUncert(zeta,zeta_i,fieldType,n,m,k,nu,T):
     #calculate the probability of excedence at each point (i,j)
     mu = zeros((n,m))
     P = zeros((n,m))
+    diff = zeros((n,m))
     for t in range(0,k):
         for i in range(0,n):
             for j in range(0,m): 
                 #equations from Gonzalez et al 2009
-                zeta_0 = zeta[i,j] + MSL + C*(MHHW-MSL)*exp(-alpha*(zeta[i,j]/sigma_0)**betaP)
-                sigma = sigma_0-CP*sigma_0*exp(-alphaP*(zeta[i,j]/sigma_0))**betaP
+                zeta_0 = zeta[i,j] + MSL + C*(MHHW-MSL)*exp(-alpha*(zeta[i,j]/sigma_0)**beta)
+                sigma = sigma_0-CP*sigma_0*exp(-1*alphaP*(zeta[i,j]/sigma_0)**betaP)
                 mu[i,j] = mu[i,j] + 1./2*nu[t]*(1-erf((zeta[i,j]-zeta_0)/(sqrt(2)*sigma)))
+                diff[i,j] = zeta[i,j] - zeta_0
     P = ones((n,m))-exp(-1*mu*T)
-    return(P,mu)
+    return(P,mu,diff)
 
+####################
+## Plotting Tools ##
+####################
+def plotting():
+    figure(1)
+    pcolormesh(P)
+    colorbar()
+    show()
+
+################
+## Status Bar ##
+################
+
+def status(n,N):
+    n = float(n)
+    N = float(N)
+    percent = n/N*100
+    sys.stdout.write("[==> ]%3d%%\r" % percent)
+    sys.stdout.flush()
 
 ##################
 ## Program Main ##
 ##################
 
 nfiles = 59
-((n,m,k)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
+#((n,m,k)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
+((n,m,k)) = ((2,2,1))
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 100                   #period of intrest 
 nu = ones((1,k))*1./T_M
 
 #compute raw max height from simulation
-max_h = maxH(nfiles,n,m,k)
+#max_h = maxH(nfiles,n,m,k)
+
+max_h = array([[1,0],[0,1]])
 #compute P_{ij}
 zeta_i = 0.0              #meters of inundation
 fieldType = 1           #1 = far-field, 2 = near-field
-(P,mu) = tidalUncert(max_h,zeta_i,fieldType,n,m,k,nu,T)
+(P,mu,diff) = tidalUncert(max_h,zeta_i,fieldType,n,m,k,nu,T)
 
-#########################
-## Plotting Algorithms ##
-#########################
+#Calls plotting algorithms
+plotting()
 
-figure(3)
-pcolormesh(P)
-colorbar()
-show()
 
 
 
