@@ -64,15 +64,18 @@ def tidalUncert(zeta,zeta_i,fieldType,n,m,k,nu,T):
     #calculate the probability of excedence at each point (i,j)
     mu = zeros((n,m))
     P = zeros((n,m))
-    diff = zeros((n,m))
-    for t in range(0,k):
-        for i in range(0,n):
-            for j in range(0,m): 
+    #diff = zeros((n,m))
+    for s in range(0,k):         #loop through events
+        for i in range(0,n):     #loop through x
+            for j in range(0,m): #loop through y
                 #equations from Gonzalez et al 2009
                 zeta_0 = zeta[i,j] + MSL + C*(MHHW-MSL)*exp(-alpha*(zeta[i,j]/sigma_0)**beta)
                 sigma = sigma_0-CP*sigma_0*exp(-1*alphaP*(zeta[i,j]/sigma_0)**betaP)
-                mu[i,j] = mu[i,j] + 1./2*nu[t]*(1-erf((zeta[i,j]-zeta_0)/(sqrt(2)*sigma)))
-                diff[i,j] = zeta[i,j] - zeta_0
+                mu[i,j] = 1./2*nu[s]*(1-erf((zeta_i-zeta[i,j])/(sqrt(2)*sigma)))
+                print "(i,j) = (%s,%r)" %(i,j)
+                print "The vale of zeta_0 is %s" %(zeta_0)
+                print "The value of sigma is %s" %(sigma)
+                print "The value of mu[i,j] is %s" %(mu[i,j])
     P = ones((n,m))-exp(-1*mu*T)
     return(P,mu,diff)
 
@@ -101,16 +104,16 @@ def status(n,N):
 ##################
 
 nfiles = 59
-#((n,m,k)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
-((n,m,k)) = ((2,2,1))
+((n,m,k)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
+#((n,m,k)) = ((2,2,1))
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 100                   #period of intrest 
 nu = ones((1,k))*1./T_M
 
 #compute raw max height from simulation
-#max_h = maxH(nfiles,n,m,k)
+max_h = maxH(nfiles,n,m,k)
 
-max_h = array([[1,0],[0,1]])
+#max_h = array([[1,0],[0,1]])
 #compute P_{ij}
 zeta_i = 0.0              #meters of inundation
 fieldType = 1           #1 = far-field, 2 = near-field
