@@ -30,16 +30,14 @@ def maxH( nfiles,n,m,k ):
     for k in range(0,nfiles):
         status(k,nfiles)
         varnam = 'fort_%s' %str(k).zfill(4)
-        exec('y = %s[:,1].copy()'%varname)
+        exec('y = %s[:,3].copy()'%varname)
         z = y.reshape(n,m,order='F')
         z = z*1./100
-        if k == 1:
-            z1 = z
-            
+       
         #check and correct max_h against frame k
         for i in range(0,n):
             for j in range(0,m):
-                if  z[i,j] < 10**20 and z[i,j]>max_h[i,j]:
+                if z[i,j]>max_h[i,j]:
                      max_h[i,j] = z[i,j]
                         
     return(max_h)                            
@@ -75,7 +73,8 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
                 zeta_0j = eta[ix,iy] + MSL + C*(MHHW-MSL)*exp(-alpha*(eta[ix,iy]/sigma_0)**beta) #eqn 2b
                 sigma_j = sigma_0-CP*sigma_0*exp(-1*alphaP*(eta[ix,iy]/sigma_0)**betaP)          #eqn 2c
                 mu[ix,iy] = mu[ix,iy] + 1./2*nu[s]*(1-erf((zeta_i-zeta_0j)/(sqrt(2)*sigma_j)))   #eqn 3b/5
-                P = ones((nx,ny))-exp(-1*mu*T)                                                   #eqn 6
+
+    P = ones((nx,ny))-exp(-1*mu*T)                                                               #eqn 6
     return(P,mu)
 
 ####################
@@ -83,10 +82,17 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ####################
 def plotting():
     figure(1)
-    pcolormesh(P)
+    pcolormesh(rot90(P))
     colorbar()
-    show()
+    title('Plot of P')
+    savefig('ProbabilityPlot.png')
 
+    figure(2)
+    pcolormesh(rot90(max_h))
+    colorbar()
+    title('Plot of max_h')
+    savefig('MaxHeightPlot.png')
+    show()
 ################
 ## Status Bar ##
 ################
@@ -104,19 +110,18 @@ def status(n,N):
 
 #test = 0 implies to run code on full set of  inundations
 #test = 1 implies to run a test on a 2x2 identity matrix instead of inundation
-test = 1
+test = 0
 
 if test == 0:
     nfiles = 59
     ((nx,ny,runs)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
     #compute raw max height from simulation
-    max_h = maxH(nfiles,n,m,k)
+    max_h = maxH(nfiles,nx,ny,runs)
     
 
 if test == 1:
-     ((nx,ny,runs)) = ((2,2,1))
-     max_h = array([[1,0],[0,1]])*100
-
+    ((nx,ny,runs)) = ((2,2,1))
+    max_h = array([[1,0],[0,1]])*100
 
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 1                   #period of intrest 
