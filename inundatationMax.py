@@ -13,34 +13,49 @@ from scipy.special import *
 ########################################################
 def maxH( nfiles,n,m,k ):
     fnums = range(1,nfiles)
+    max_h = zeros((n,m))
     print "Reading in fort.q**** files"
 
     ## Read in fort.q**** files
     for fnum in fnums:
         outdir = 'MOST_TEST/_output/'
         fname = outdir + 'fort.q%s' % str(fnum).zfill(4)
-        varname = 'fort_%s' %str(fnum).zfill(4)
-        #print 'Reading in: '+ fname
+        varname = 'fort_%s' % str(fnum).zfill(4)
+#        print 'Reading in: '+ fname
+#        print 'varname is: '+ varname
         exec('%s=loadtxt(%r, skiprows=9)'%(varname,fname))
         status(fnum,nfiles)
-        max_h = zeros((n,m))
-       
-    #print "Analysing frames"
-    print "Analysing Frames: "
-    for k in range(0,nfiles):
-        status(k,nfiles)
-        varnam = 'fort_%s' %str(k).zfill(4)
+
+             
+#    print "Analysing frames"
+#    print "Analysing Frames: "
+#    for k in range(0,nfiles):
+#        status(k,nfiles)
+#        varname = 'fort_%s' % str(k).zfill(4)
+#        print varnam
         exec('y = %s[:,3].copy()'%varname)
         z = y.reshape(n,m,order='F')
         z = z*1./100
-       
+        
+        if fnum == 1:
+            print "saving z1 at k = %s" %k
+            z1 = z
+
+        if fnum == 10:
+            z2 = z
+            #print z2 == z1
+
         #check and correct max_h against frame k
         for i in range(0,n):
             for j in range(0,m):
                 if z[i,j]>max_h[i,j]:
                      max_h[i,j] = z[i,j]
+#    figure(4)
+#    pcolormesh(z1)
+#    colorbar()
+#    show()
                         
-    return(max_h)                            
+    return(max_h,z1)                            
 
 ################################################
 ## Take max_h information and generate P_{ij} ##
@@ -81,6 +96,7 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ## Plotting Tools ##
 ####################
 def plotting():
+    
     figure(1)
     pcolormesh(rot90(P))
     colorbar()
@@ -92,7 +108,30 @@ def plotting():
     colorbar()
     title('Plot of max_h')
     savefig('MaxHeightPlot.png')
+
+    #Plotting Masked Plots:
+
+    masked_max_h = numpy.ma.masked_where(z1 <= 0,max_h)
+    coast = numpy.ma.masked_where(z1 < 0, ones((nx,ny)), )
+    
+    figure(3)
+    pcolormesh(rot90(masked_max_h))
+    colorbar()
+    title('masked plot of max_h')
+    savefig('MaxHeightPlot.png')
+
+    figure(4)
+    pcolormesh(rot90(coast))
+    colorbar()
+
+    figure(5)
+    pcolormesh(z1)
+    colorbar()
     show()
+
+
+    show()
+    return(coast)
 ################
 ## Status Bar ##
 ################
@@ -116,12 +155,12 @@ if test == 0:
     nfiles = 59
     ((nx,ny,runs)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
     #compute raw max height from simulation
-    max_h = maxH(nfiles,nx,ny,runs)
+    (max_h,z1) = maxH(nfiles,nx,ny,runs)
     
-
 if test == 1:
     ((nx,ny,runs)) = ((2,2,1))
     max_h = array([[1,0],[0,1]])*100
+    z1 = max_h
 
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 1                   #period of intrest 
@@ -133,7 +172,7 @@ fieldType = 1           #1 = far-field, 2 = near-field
 (P,mu) = tidalUncert(max_h,zeta_i,fieldType,nx,ny,runs,nu,T)
 
 #Calls plotting algorithms
-plotting()
+coast = plotting()
 
 
 
