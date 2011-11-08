@@ -4,6 +4,8 @@
 
 from numpy import *
 from matplotlib import *
+from matplotlib import rc
+rc("text",usetex=True)
 from pylab import *
 from scipy.special import *
 #inundationMax()
@@ -39,6 +41,7 @@ def maxH( nfiles,n,m,k ):
         
         if fnum == 1:
             print "saving z1 at k = %s" %k
+#            z1 = where(z<0,0,z)
             z1 = z
 
         if fnum == 10:
@@ -46,13 +49,15 @@ def maxH( nfiles,n,m,k ):
             #print z2 == z1
 
         #check and correct max_h against frame k
-        for i in range(0,n):
-            for j in range(0,m):
-                if z[i,j]>max_h[i,j]:
-                     max_h[i,j] = z[i,j]
-#    figure(4)
-#    pcolormesh(z1)
+#        for i in range(0,n):
+#            for j in range(0,m):
+#                if z[i,j]>max_h[i,j]:
+#                     max_h[i,j] = z[i,j]
+        max_h = where(z>max_h,z,max_h)
+#    figure(42)
+#    contour(rot90(z1))
 #    colorbar()
+#    title('Initial Condition')
 #    show()
                         
     return(max_h,z1)                            
@@ -97,37 +102,55 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ####################
 def plotting():
     
+#Plotting Masked Plots:
+
+    masked_max_h = numpy.ma.masked_where(z1 > -10,max_h)
+    masked_P = numpy.ma.masked_where(z1 > -10,P)
+    masked_mu = numpy.ma.masked_where(z1 > -10,mu)
+    coast = numpy.ma.masked_where(z1 > -10, ones((nx,ny)))
+    
     figure(1)
-    pcolormesh(rot90(P))
+    clf()
+    pcolormesh(rot90(masked_P))
     colorbar()
-    title('Plot of P')
+    title('Plot of Probability that Inundation Exceeds $\zeta_i$')
     savefig('ProbabilityPlot.png')
 
     figure(2)
-    pcolormesh(rot90(max_h))
+    clf()
+    pcolormesh(rot90(masked_mu))
     colorbar()
-    title('Plot of max_h')
+    title('Plot of $\mu_{i,j}$')
     savefig('MaxHeightPlot.png')
 
-    #Plotting Masked Plots:
-
-    masked_max_h = numpy.ma.masked_where(z1 <= 0,max_h)
-    coast = numpy.ma.masked_where(z1 < 0, ones((nx,ny)), )
     
+
+#    figure(2)
+#    clf()
+#    pcolormesh(rot90(max_h))
+#    colorbar()
+#    title('Plot of Max depth w.r.t. sealevel')
+#    savefig('MaxHeightPlot.png')
+
     figure(3)
+    clf()
     pcolormesh(rot90(masked_max_h))
     colorbar()
-    title('masked plot of max_h')
+    title('masked plot of max depth w.r.t. sealevel')
     savefig('MaxHeightPlot.png')
 
     figure(4)
+    clf()
     pcolormesh(rot90(coast))
     colorbar()
-
-    figure(5)
-    pcolormesh(z1)
-    colorbar()
-    show()
+    title('Coast Line')
+#
+#    figure(5)
+#    clf()
+#    pcolormesh(z1)
+#    colorbar()
+#    title('z1')
+#    show()
 
 
     show()
@@ -149,7 +172,7 @@ def status(n,N):
 
 #test = 0 implies to run code on full set of  inundations
 #test = 1 implies to run a test on a 2x2 identity matrix instead of inundation
-test = 0
+test = 0 
 
 if test == 0:
     nfiles = 59
