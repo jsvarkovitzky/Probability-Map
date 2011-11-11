@@ -13,7 +13,7 @@ from scipy.special import *
 ########################################################
 ## Iterate over each time step to find max inundation ##
 ########################################################
-def maxH( nfiles,n,m,k ):
+def maxH( nfiles,n,m,k):
     fnums = range(1,nfiles)
     max_h = zeros((n,m))
     print "Reading in fort.q**** files"
@@ -28,16 +28,13 @@ def maxH( nfiles,n,m,k ):
         exec('%s=loadtxt(%r, skiprows=9)'%(varname,fname))
         status(fnum,nfiles)
 
-             
-#    print "Analysing frames"
-#    print "Analysing Frames: "
-#    for k in range(0,nfiles):
-#        status(k,nfiles)
-#        varname = 'fort_%s' % str(k).zfill(4)
-#        print varnam
-        exec('y = %s[:,3].copy()'%varname)
+        exec('y = %s[:,%r].copy()'%(varname,measure_num))
         z = y.reshape(n,m,order='F')
-        z = z*1./100
+#Corrects for the fact h is in m and eta is in cm
+        if measure_num == 3:
+            z = z
+        else:
+            z = z*1./100
         
         if fnum == 1:
             print "saving z1 at k = %s" %k
@@ -48,18 +45,7 @@ def maxH( nfiles,n,m,k ):
             z2 = z
             #print z2 == z1
 
-        #check and correct max_h against frame k
-#        for i in range(0,n):
-#            for j in range(0,m):
-#                if z[i,j]>max_h[i,j]:
-#                     max_h[i,j] = z[i,j]
         max_h = where(z>max_h,z,max_h)
-#    figure(42)
-#    contour(rot90(z1))
-#    colorbar()
-#    title('Initial Condition')
-#    show()
-                        
     return(max_h,z1)                            
 
 ################################################
@@ -102,56 +88,56 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ####################
 def plotting():
     
-#Plotting Masked Plots:
 
+    #masking nessisary arrays
     masked_max_h = numpy.ma.masked_where(z1 > -10,max_h)
     masked_P = numpy.ma.masked_where(z1 > -10,P)
     masked_mu = numpy.ma.masked_where(z1 > -10,mu)
     coast = numpy.ma.masked_where(z1 > -10, ones((nx,ny)))
     
+    #calculating axis corrections:
+    dx = 2.777778*10**(-4)   #latitude dx
+    dy = 2.777778*10**(-4)  #longitude dy
+    x0 = 235.7655#*10**2      #lower left latitude of the grid
+    y0 = 41.76956#*10**1      #lower left longitude of the grid
+    x = linspace(x0,x0+dx*nx,nx)
+    y = linspace(y0+dy*ny,y0,ny)
+
     figure(1)
     clf()
-    pcolormesh(rot90(masked_P))
+    pcolormesh(x,y,transpose(masked_P))
+    axis([x[0], x[-1], y[-1], y[0]])
+    jet()
     colorbar()
-    title('Plot of Probability that Inundation Exceeds $\zeta_i$')
-    savefig('ProbabilityPlot.png')
+    title('$P_i(\zeta>\zeta_i)$')
+    savefig('%sProbabilityPlot.png' %measure[measure_num])
 
     figure(2)
     clf()
-    pcolormesh(rot90(masked_mu))
+    pcolormesh(x,y,transpose(masked_mu))
+    axis([x[0], x[-1], y[-1], y[0]])
+    jet()
     colorbar()
-    title('Plot of $\mu_{i,j}$')
-    savefig('MaxHeightPlot.png')
-
-    
-
-#    figure(2)
-#    clf()
-#    pcolormesh(rot90(max_h))
-#    colorbar()
-#    title('Plot of Max depth w.r.t. sealevel')
-#    savefig('MaxHeightPlot.png')
+    title('$\mu_{i,j}$')
+    savefig('%sMaxMaskedMuPlot.png'%measure[measure_num])
 
     figure(3)
     clf()
-    pcolormesh(rot90(masked_max_h))
+    pcolormesh(x,y,transpose(masked_max_h))
+    axis([x[0], x[-1], y[-1], y[0]])
+    jet()
     colorbar()
-    title('masked plot of max depth w.r.t. sealevel')
-    savefig('MaxHeightPlot.png')
+    title('$\hat{\eta}_i$ w.r.t. Topography')
+    savefig('%sMaxPlotMasked.png' %measure[measure_num] )
 
     figure(4)
     clf()
-    pcolormesh(rot90(coast))
-    colorbar()
-    title('Coast Line')
-#
-#    figure(5)
-#    clf()
-#    pcolormesh(z1)
-#    colorbar()
-#    title('z1')
-#    show()
-
+    pcolormesh(x,y,transpose(coast))
+    axis([x[0], x[-1], y[-1], y[0]])
+    summer()
+    #   colorbar()
+    title('Crescent City Coast')
+    savefig('%sCoastLine.png' %measure[measure_num])
 
     show()
     return(coast)
@@ -172,30 +158,40 @@ def status(n,N):
 
 #test = 0 implies to run code on full set of  inundations
 #test = 1 implies to run a test on a 2x2 identity matrix instead of inundation
-test = 0 
+test = 0
+measure = (('H','HU','HV','ETA'))  #the parameter to measure
+measure_num = 0                    #identifying number of measure
+zeta_i = 2.1            #meters of inundation
+fieldType = 1           #1 = far-field, 2 = near-field
+
+
+## Testing max_h generation ##
 
 if test == 0:
     nfiles = 59
     ((nx,ny,runs)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
     #compute raw max height from simulation
     (max_h,z1) = maxH(nfiles,nx,ny,runs)
-    
+  
+
+## Actual Run to calculate max_h ##
+  
 if test == 1:
     ((nx,ny,runs)) = ((2,2,1))
     max_h = array([[1,0],[0,1]])*100
     z1 = max_h
 
+
+
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 1                   #period of intrest 
 nu = ones((1,runs))*1./T_M
 
-#compute P_{ij}
-zeta_i = 2.1            #meters of inundation
-fieldType = 1           #1 = far-field, 2 = near-field
+
 (P,mu) = tidalUncert(max_h,zeta_i,fieldType,nx,ny,runs,nu,T)
 
 #Calls plotting algorithms
-coast = plotting()
+plotting()
 
 
 
