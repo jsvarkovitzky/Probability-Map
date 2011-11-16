@@ -13,22 +13,25 @@ from scipy.special import *
 ########################################################
 ## Iterate over each time step to find max inundation ##
 ########################################################
-def maxH( nfiles,n,m,k):
+def maxH(nfiles,n,m,k):
     fnums = range(1,nfiles)
     max_h = zeros((n,m))
     print "Reading in fort.q**** files"
 
     ## Read in fort.q**** files
     for fnum in fnums:
-        outdir = 'MOST_TEST/_output/'
-        fname = outdir + 'fort.q%s' % str(fnum).zfill(4)
-        varname = 'fort_%s' % str(fnum).zfill(4)
-#        print 'Reading in: '+ fname
-#        print 'varname is: '+ varname
-        exec('%s=loadtxt(%r, skiprows=9)'%(varname,fname))
-        status(fnum,nfiles)
-
-        exec('y = %s[:,%r].copy()'%(varname,measure_num))
+        outdir = 'MOST_TEST/_output/'                        #set directory containing fort.q files
+        fname = outdir + 'fort.q%s' % str(fnum).zfill(4)     #set specific file name to be read in
+        varname = 'fort_%s' % str(fnum).zfill(4)             #set matching variable name for the file
+        exec('%s=loadtxt(%r, skiprows=9)'%(varname,fname))   #read in the file into varname
+        status(fnum*(measure_num+1)*0.25,nfiles)             
+        
+        if measure_num == 1: #measuring kinetic energy
+            exec('y1 = %s[:,%r].copy()'%(varname,measure_num))    
+            exec('y2 = %s[:,%r].copy()'%(varname,measure_num+1))
+            y = sqrt(y1**2+y2**2)
+        else:
+            exec('y = %s[:,%r].copy()'%(varname,measure_num))    #Select the desired row for computation
         z = y.reshape(n,m,order='F')
 #Corrects for the fact h is in m and eta is in cm
         if measure_num == 3:
@@ -70,10 +73,10 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
     mu = zeros((nx,ny))
     P = zeros((nx,ny))
     
-    print 'Computing Probability: '
+#    print 'Computing Probability: '
     for s in range(0,runs):         #loop through events
         for ix in range(0,nx):     #loop through x
-            status(ix,nx)
+#            status(ix,nx)
             for iy in range(0,ny): #loop through y
                 #The following equations are from Gonzalez et al 2009
                 zeta_0j = eta[ix,iy] + MSL + C*(MHHW-MSL)*exp(-alpha*(eta[ix,iy]/sigma_0)**beta) #eqn 2b
@@ -88,7 +91,7 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ####################
 def plotting():
     
-
+    close('all')
     #masking nessisary arrays
     masked_max_h = numpy.ma.masked_where(z1 > -10,max_h)
     masked_P = numpy.ma.masked_where(z1 > -10,P)
@@ -163,16 +166,25 @@ measure = (('H','HU','HV','ETA'))  #the parameter to measure
 measure_num = 0                    #identifying number of measure
 zeta_i = 2.1            #meters of inundation
 fieldType = 1           #1 = far-field, 2 = near-field
+T_M = 520                 #recurance time from Gonzalez et al. 2009
+T = 1                   #period of intrest 
 
+        
 
 ## Testing max_h generation ##
 
 if test == 0:
-    nfiles = 59
-    ((nx,ny,runs)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
-    #compute raw max height from simulation
-    (max_h,z1) = maxH(nfiles,nx,ny,runs)
-  
+    for i in range(0,4):
+        measure_num = i
+        nfiles = 59
+        ((nx,ny,runs)) = ((271,192,1)) #x-pts, y-pts, k-timesteps ### in the future automate this!!!!!
+        #compute raw max height from simulation
+        (max_h,z1) = maxH(nfiles,nx,ny,runs)
+        nu = ones((1,runs))*1./T_M
+        (P,mu) = tidalUncert(max_h,zeta_i,fieldType,nx,ny,runs,nu,T)
+        #Calls plotting algorithms
+        plotting()
+
 
 ## Actual Run to calculate max_h ##
   
@@ -186,10 +198,7 @@ if test == 1:
 T_M = 520                 #recurance time from Gonzalez et al. 2009
 T = 1                   #period of intrest 
 nu = ones((1,runs))*1./T_M
-
-
 (P,mu) = tidalUncert(max_h,zeta_i,fieldType,nx,ny,runs,nu,T)
-
 #Calls plotting algorithms
 plotting()
 
