@@ -34,17 +34,12 @@ def maxH( nfiles,n,m,k):
         if measure_num == 3:
             z = z
         else:
-            z = z*1./100
-        
+            z = z
+
+        z = z*1./100
         if fnum == 1:
             print "saving z1 at k = %s" %k
-#            z1 = where(z<0,0,z)
             z1 = z
-
-        if fnum == 10:
-            z2 = z
-            #print z2 == z1
-
         max_h = where(z>max_h,z,max_h)  #computes max over entire domain
     return(max_h,z1)                            
 
@@ -70,7 +65,7 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
     mu = zeros((nx,ny))
     P = zeros((nx,ny))
     
-    print 'Computing Probability: '
+    print 'Computing Probabilities: '
     for s in range(0,runs):         #loop through events
         for ix in range(0,nx):     #loop through x
             status(ix,nx)
@@ -88,15 +83,14 @@ def tidalUncert(eta,zeta_i,fieldType,nx,ny,runs,nu,T):
 ####################
 def plotting():
 
-    
-
     #masking nessisary arrays
     mask_lim = -10
     masked_max_h = numpy.ma.masked_where(z1 > mask_lim,max_h)
     masked_P = numpy.ma.masked_where(z1 > mask_lim,P)
     masked_mu = numpy.ma.masked_where(z1 > mask_lim,mu)
-    coast = numpy.ma.masked_where(z1 > mask_lim, ones((nx,ny)))
-    
+    coast = numpy.ma.masked_where(z1 > 0, ones((nx,ny)))
+    h_non_zero = numpy.ma.masked_where(max_h == 0,max_h)
+    zInit = numpy.ma.masked_where(z1 < -10**10, z1)
     #calculating axis corrections:
     dx = 2.777778*10**(-4)   #latitude dx
     dy = 2.777778*10**(-4)  #longitude dy
@@ -104,7 +98,6 @@ def plotting():
     y0 = 41.76956#*10**1      #lower left longitude of the grid
     x = linspace(x0,x0+dx*nx,nx)
     y = linspace(y0+dy*ny,y0,ny)
-
 
     figure(1)
     clf()
@@ -142,6 +135,24 @@ def plotting():
     title('Crescent City Coast')
     savefig('%sCoastLine.png' %measure[measure_num])
 
+    figure(5)
+    pcolormesh(x,y,rot90(h_non_zero))
+    axis([x[0], x[-1], y[-1], y[0]])
+    jet()
+    colorbar()
+    title('Where does flooding occur')
+    savefig('%sFloodWhere.png' %measure[measure_num])
+    
+    figure(6)
+    clf()
+    pcolormesh(x,y,rot90(zInit))
+    axis([x[0], x[-1], y[-1], y[0]])
+    summer()
+    colorbar()
+    title('Crescent City Coast')
+
+    
+
     show()
     return(coast)
 ################
@@ -158,7 +169,7 @@ def status(n,N):
 ##################
 ## Program Main ##
 ##################
-
+"""
 close ('all')
 #test = 0 implies to run code on full set of  inundations
 #test = 1 implies to run a test on a 2x2 identity matrix instead of inundation
@@ -196,3 +207,4 @@ nu = ones((1,runs))*1./T_M
 
 #Calls plotting algorithms
 plotting()
+"""
